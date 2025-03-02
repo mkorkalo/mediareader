@@ -24,7 +24,8 @@ let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
         .unwrap();
 }
 
-async fn get_media(Path((_server, id)): Path<(String, String)>) -> impl IntoResponse {
+async fn get_media(Path((server, id)): Path<(String, String)>) -> impl IntoResponse {
+    println!("Handling request: {} {}", server, id);
     if id.len() != "aabbcccccccccccccccccccc".len() {
         return (StatusCode::BAD_REQUEST, Bytes::from("Invalid ID length"));
     }
