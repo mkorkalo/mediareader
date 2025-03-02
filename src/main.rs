@@ -40,6 +40,12 @@ async fn get_media(Path((server, id)): Path<(String, String)>) -> (StatusCode, [
     let root_path = StdPath::new("/media/local_content");
     let media_path = root_path.
         join(id_a).join(id_b).join(id_c);
+    if media_path.is_relative() {
+        return get_error(String::from("Relative paths not supported ;)"))
+    }
+    if !media_path.starts_with(root_path) {
+        return get_error(String::from("Directory traverse not supported ;)"))
+    }
     println!("Reading file: {}", media_path.display());
     let exists = fs::exists(media_path.as_path()).unwrap();
     if !exists {
