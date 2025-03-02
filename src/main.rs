@@ -36,7 +36,7 @@ async fn get_media(Path((server, id)): Path<(String, String)>) -> (StatusCode, [
     if id.len() != "aabbcccccccccccccccccccc".len() {
         return get_error(String::from("Invalid ID length"));
     }
-    let re = Regex::new(r"^[a-z0-9]+$").unwrap();
+    let re = Regex::new(r"^[a-zA-Z0-9]+$").unwrap();
     if !re.is_match(id.as_str()) {
         return get_error(String::from("Invalid characters in ID"));
     }
