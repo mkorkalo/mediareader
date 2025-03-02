@@ -1,15 +1,8 @@
 use axum::{
-    response::{Html, IntoResponse},
-    extract::Path,
-    routing::get,
-    body::Bytes,
-    Router,
-    http::StatusCode
+    body::Bytes, extract::Path, http::StatusCode, response::{Html, IntoResponse}, routing::get, Router
 };
 use std::{
-    path::Path as StdPath,
-    fs,
-    net::SocketAddr,
+    fs, net::SocketAddr, path::Path as StdPath
 };
 
 #[tokio::main]
@@ -24,10 +17,22 @@ let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
         .unwrap();
 }
 
-async fn get_media(Path((server, id)): Path<(String, String)>) -> impl IntoResponse {
+fn get_error(error: String) -> (StatusCode, [(&'static str, &'static str); 1], axum::body::Bytes) {
+    return (StatusCode::BAD_REQUEST, [("Content-Type", "text/html")], Bytes::from(error));
+}
+
+fn get_data_response(data: Vec<u8>) -> (StatusCode, [(&'static str, &'static str); 1], axum::body::Bytes) {
+    let mime_type = match infer::get(&data) {
+        Some(v) => v.mime_type(),
+        None => "application/octet-stream",
+    };
+    return (StatusCode::OK, [("Content-Type", mime_type)], Bytes::from(data));
+}
+
+async fn get_media(Path((server, id)): Path<(String, String)>) -> (StatusCode, [(&'static str, &'static str); 1], impl IntoResponse) {
     println!("Handling request: {} {}", server, id);
     if id.len() != "aabbcccccccccccccccccccc".len() {
-        return (StatusCode::BAD_REQUEST, Bytes::from("Invalid ID length"));
+        return get_error(String::from("Invalid ID length"));
     }
     let id_a = &id[0..2];
     let id_b = &id[2..4];
@@ -38,10 +43,11 @@ async fn get_media(Path((server, id)): Path<(String, String)>) -> impl IntoRespo
     println!("Reading file: {}", media_path.display());
     let exists = fs::exists(media_path.as_path()).unwrap();
     if !exists {
-        return (StatusCode::NOT_FOUND, Bytes::from("File does not exist"));
+        return get_error(String::from("File does not exist"));
     };
-    return match fs::read(media_path) {
-        Ok(data) => (StatusCode::OK, Bytes::from(data)),
-        Err(err) => (StatusCode::NOT_FOUND, Bytes::from(err.to_string())),
+    let data = match fs::read(media_path) {
+        Ok(data) => data,
+        Err(err) => return get_error(err.to_string()),
     };
+    return get_data_response(data);
 }
