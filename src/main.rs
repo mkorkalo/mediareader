@@ -44,12 +44,11 @@ async fn get_media(Path((server, id)): Path<(String, String)>) -> (StatusCode, [
     let id_a = &id[0..2];
     let id_b = &id[2..4];
     let id_c = &id[4..];
-    let root_path = StdPath::new("/media/local_content");
-    let media_path = root_path.
-        join(id_a).join(id_b).join(id_c);
-    if media_path.is_relative() {
-        return get_error(String::from("Relative paths not supported"))
-    }
+    let root_path = StdPath::new("/Users/keitsi/media/local_content");
+    let media_path = match root_path.join(id_a).join(id_b).join(id_c).canonicalize() {
+        Ok(p) => p,
+        Err(_err) => return get_error(String::from("Attempted directory traverse or file not found")),
+        };
     if !media_path.starts_with(root_path) {
         return get_error(String::from("Directory traverse not supported"))
     }
