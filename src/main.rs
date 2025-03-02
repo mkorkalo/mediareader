@@ -4,6 +4,8 @@ use axum::{
 use std::{
     fs, net::SocketAddr, path::Path as StdPath
 };
+use regex::Regex;
+
 
 #[tokio::main]
 async fn main() {
@@ -34,6 +36,11 @@ async fn get_media(Path((server, id)): Path<(String, String)>) -> (StatusCode, [
     if id.len() != "aabbcccccccccccccccccccc".len() {
         return get_error(String::from("Invalid ID length"));
     }
+    let re = Regex::new(r"^[a-z0-9]+$").unwrap();
+    if !re.is_match(id.as_str()) {
+        return get_error(String::from("Invalid characters in ID"));
+    }
+
     let id_a = &id[0..2];
     let id_b = &id[2..4];
     let id_c = &id[4..];
@@ -41,10 +48,10 @@ async fn get_media(Path((server, id)): Path<(String, String)>) -> (StatusCode, [
     let media_path = root_path.
         join(id_a).join(id_b).join(id_c);
     if media_path.is_relative() {
-        return get_error(String::from("Relative paths not supported ;)"))
+        return get_error(String::from("Relative paths not supported"))
     }
     if !media_path.starts_with(root_path) {
-        return get_error(String::from("Directory traverse not supported ;)"))
+        return get_error(String::from("Directory traverse not supported"))
     }
     println!("Reading file: {}", media_path.display());
     let exists = fs::exists(media_path.as_path()).unwrap();
